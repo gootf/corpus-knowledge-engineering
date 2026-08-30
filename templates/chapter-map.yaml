@@ -1,0 +1,45 @@
+# chapter-map skeleton — deterministic, from the AUTHOR'S OWN ToC + page markers
+# (no LLM guessing; adapt per book)
+#
+# Method:
+#   1. Read the book's ToC lines -> chapters + subsections + page numbers.
+#   2. grep -n '<marker-pattern>' <normalized-source> -> exact line per page.
+#      ([PAGE N/M] matches the corpus family this template was built for;
+#      adapt the pattern to your corpus's own page-marker convention.)
+#   3. Fill in start_line/end_line from the marker mapping.
+# Line numbers refer to the NORMALIZED (LF) file == grep/sed view (see skill pitfalls #1).
+
+source:
+  id: <book-id>            # e.g. book-001
+  file: "normalized/sources/<id>.txt"
+  title: "<Full Title>"
+  author: "<Author>"
+  pages: <N>
+  line_span: [1, <last>]
+  chapter_map_method: "deterministic — ToC pages + [PAGE N/M] markers"
+
+chapters:
+  - id: ch01
+    title: "<Chapter 1 Title>"
+    start_page: <1>
+    start_line: <line>
+    end_line: <line>
+    sections: []
+
+  - id: ch02
+    title: "<Chapter 2 Title>"
+    start_page: <6>
+    start_line: <line>
+    end_line: <line>
+    sections:
+      - { title: "<Section Title>", page: <27>, line: <line> }
+      - { title: "<Discussion>", page: <37>, line: <line> }
+
+back_matter:
+  - { id: references, title: "REFERENCES", start_page: <126>, start_line: <line>, end_line: <line> }
+  - { id: appendix,   title: "APPENDIX A", start_page: <142>, start_line: <line>, end_line: <line> }
+
+verification:
+  boundary_evidence: "every start_line maps 1:1 to a ToC page marker (grep -n '[PAGE N/M]')"
+  chapter_count: <N>
+  status: PASS

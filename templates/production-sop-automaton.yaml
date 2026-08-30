@@ -1,0 +1,94 @@
+# Production SOP automaton — finite-automaton form (DFA)
+# Formal five-tuple (Σ / Q / δ / q0 / F) + global guards + modes.
+# Companion to SKILL.md "Production SOP" — the v3 vector-machine form
+# replaces the semantic guards below with threshold functions
+# (see references/vector-machine-sop.md).
+
+automaton:
+  name: production-sop-v2
+  type: dfa
+
+  # Σ — input alphabet (signals the automaton reacts to)
+  alphabet:
+    - input
+    - completeness.complete
+    - completeness.partial
+    - completeness.incomplete
+    - completeness.fragment
+    - structure.recovered
+    - classify.new_primitive
+    - classify.family_hit
+    - classify.checklist
+    - classify.procedural
+    - classify.tool_rules
+    - review.needed
+    - review.confirmed
+    - runtime.mapped
+    - runtime.unmapped
+    - merge.committed
+    - stop.info_insufficient
+    - stop.already_covered
+    - stop.examples_only
+    - stop.maintenance_cost
+
+  # Q — states
+  states:
+    - MATERIAL
+    - COMPLETENESS
+    - STRUCTURE
+    - CLASSIFY
+    - REVIEW
+    - MERGE
+    - RUNTIME
+    - FREEZE
+    - SKILL
+    - EVIDENCE
+    - TOOL
+    - REJECT
+    - STOP
+
+  # q0 — initial state
+  initial: MATERIAL
+
+  # F — terminal states (6): rejection and stopping are NORMAL paths,
+  # not exceptions; every material may legally become nothing.
+  terminals: [FREEZE, SKILL, EVIDENCE, TOOL, REJECT, STOP]
+
+  # δ — transition function: (state, signal) -> state, exactly one
+  # transition per (state, signal) pair (DFA property)
+  transitions:
+    - { from: MATERIAL,     signal: input,                   to: COMPLETENESS }
+    - { from: COMPLETENESS, signal: completeness.complete,   to: STRUCTURE }
+    - { from: COMPLETENESS, signal: completeness.partial,    to: STRUCTURE }
+    - { from: COMPLETENESS, signal: completeness.incomplete, to: REJECT }
+    - { from: COMPLETENESS, signal: completeness.fragment,   to: RUNTIME }
+    - { from: STRUCTURE,    signal: structure.recovered,     to: CLASSIFY }
+    - { from: CLASSIFY,     signal: classify.new_primitive,  to: SKILL }
+    - { from: CLASSIFY,     signal: classify.family_hit,     to: MERGE }
+    - { from: CLASSIFY,     signal: classify.checklist,      to: RUNTIME }
+    - { from: CLASSIFY,     signal: classify.procedural,     to: RUNTIME }
+    - { from: CLASSIFY,     signal: classify.tool_rules,     to: TOOL }
+    - { from: CLASSIFY,     signal: stop.already_covered,    to: STOP }
+    - { from: CLASSIFY,     signal: stop.examples_only,      to: STOP }
+    - { from: CLASSIFY,     signal: review.needed,           to: REVIEW }
+    - { from: REVIEW,       signal: review.confirmed,        to: CLASSIFY }
+    - { from: MERGE,        signal: merge.committed,         to: FREEZE }
+    - { from: RUNTIME,      signal: runtime.mapped,          to: EVIDENCE }
+    - { from: RUNTIME,      signal: runtime.unmapped,        to: STOP }
+
+  # global guard — may fire from ANY state; the anti-expansion last line
+  global_guards:
+    stop_condition: [info_insufficient, already_covered, examples_only, maintenance_cost]
+    # e.g. (CLASSIFY, stop.already_covered) -> STOP
+
+  # modes — same automaton, different terminal expectations
+  modes:
+    full:
+      description: complete pipeline to a terminal asset
+      allowed_terminals: [FREEZE, SKILL, EVIDENCE, TOOL, REJECT, STOP]
+    analyze_only:
+      description: analysis output only (structure + classification), no compilation
+      allowed_terminals: [EVIDENCE, REJECT, STOP]
+    fold_in:
+      description: fold the material into an existing knowledge unit
+      allowed_terminals: [FREEZE, REJECT, STOP]
